@@ -62,6 +62,8 @@
          terminate/2,
          code_change/3]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -record(state,
         {status = up,
          services = [],
@@ -324,7 +326,7 @@ handle_call(suspend_healths, _From,
     {reply, already_disabled, State};
 handle_call(suspend_healths, _From,
             State = #state{healths_enabled = true}) ->
-    logger:info("suspending all health checks"),
+    ?LOG(info, "suspending all health checks"),
     Healths = all_health_fsms(suspend,
                               State#state.health_checks),
     {reply,
@@ -336,7 +338,7 @@ handle_call(resume_healths, _From,
     {reply, already_enabled, State};
 handle_call(resume_healths, _From,
             State = #state{healths_enabled = false}) ->
-    logger:info("resuming all health checks"),
+    ?LOG(info, "resuming all health checks"),
     Healths = all_health_fsms(resume,
                               State#state.health_checks),
     {reply,
@@ -731,13 +733,13 @@ health_fsm(checking, {result, Pid, Cause}, Service,
 health_fsm(checking, {'EXIT', Pid, Cause}, Service,
            #health_check{checking_pid = Pid} = InCheck)
     when Cause =/= normal ->
-    logger:error("health check process for ~p error'ed: "
+    ?LOG(error, "health check process for ~p error'ed: "
                  " ~p",
                  [Service, Cause]),
     Fails = InCheck#health_check.callback_failures + 1,
     if Fails ==
            InCheck#health_check.max_callback_failures ->
-           logger:error("health check callback for ~p failed "
+           ?LOG(error, "health check callback for ~p failed "
                         "too many times, disabling.",
                         [Service]),
            {down,

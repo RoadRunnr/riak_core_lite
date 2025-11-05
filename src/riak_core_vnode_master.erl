@@ -24,6 +24,7 @@
 
 -module(riak_core_vnode_master).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_vnode.hrl").
 
 -behaviour(gen_server).
@@ -236,7 +237,7 @@ handle_cast({wait_for_service, Service}, State) ->
     case Service of
         undefined -> ok;
         _ ->
-            logger:debug("Waiting for service: ~p", [Service]),
+            ?LOG(debug, "Waiting for service: ~p", [Service]),
             riak_core:wait_for_service(Service)
     end,
     {noreply, State};

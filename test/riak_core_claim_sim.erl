@@ -482,7 +482,7 @@ commission(Base, Test, {Wants, Choose}) ->
                                                                                   TN)
                                               catch
                                                   _:Reason ->
-                                                      logger:info("Ring stats failed - ~p\n",
+                                                      ?LOG(info, "Ring stats failed - ~p\n",
                                                                   [Reason]),
                                                       []
                                               end,
@@ -527,7 +527,7 @@ commission(Base, Test, {Wants, Choose}) ->
                                                                                    TN)
                                                catch
                                                    _:Reason ->
-                                                       logger:info("Ring stats failed - ~p\n",
+                                                       ?LOG(info, "Ring stats failed - ~p\n",
                                                                    [Reason]),
                                                        []
                                                end,

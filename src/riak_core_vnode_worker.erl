@@ -20,6 +20,7 @@
 
 -behaviour(gen_server).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_vnode.hrl").
 
 % gen_server callbacks
@@ -77,7 +78,7 @@ init([Module,
     {ok, #state{module = Module, modstate = WorkerState}}.
 
 handle_call(Event, _From, State) ->
-    logger:debug("Vnode worker received synchronous event: "
+    ?LOG(debug, "Vnode worker received synchronous event: "
                  "~p.",
                  [Event]),
     {reply, ok, State}.

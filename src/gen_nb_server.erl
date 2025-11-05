@@ -35,6 +35,8 @@
          terminate/2,
          code_change/3]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -define(SERVER, ?MODULE).
 
 -record(state, {cb, sock, server_state}).
@@ -248,9 +250,9 @@ listen_on(Module, IpAddrStr, Port) ->
     case inet_parse:address(IpAddrStr) of
         {ok, IpAddr} -> listen_on(Module, IpAddr, Port);
         Err ->
-            logger:critical("Cannot start listener for ~p\n      "
-                            "                      on invalid address "
-                            "~p:~p",
-                            [Module, IpAddrStr, Port]),
+            ?LOG(critical, "Cannot start listener for ~p\n      "
+                 "                      on invalid address "
+                 "~p:~p",
+                 [Module, IpAddrStr, Port]),
             Err
     end.

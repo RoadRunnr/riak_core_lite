@@ -47,6 +47,7 @@
          kill_handoffs_in_direction/1,
          handoff_change_enabled_setting/2]).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_handoff.hrl").
 
 -export_type([ho_type/0]).
@@ -465,8 +466,8 @@ handle_cast({status_update, ModSrcTgt, StatsUpdate},
                        HS)
         of
         false ->
-            logger:error("status_update for non-existing handoff ~p",
-                         [ModSrcTgt]),
+            ?LOG(error, "status_update for non-existing handoff ~p",
+                 [ModSrcTgt]),
             {noreply, State};
         HO ->
             Stats2 = update_stats(StatsUpdate,
@@ -534,16 +535,13 @@ handle_info({'DOWN', Ref, process, _Pid, Reason},
                                 when X == max_concurrency orelse
                                          element(1, X) == shutdown andalso
                                              element(2, X) == max_concurrency ->
-                                logger:info("An ~w handoff of partition ~w ~w was "
-                                            "terminated\n                        "
-                                            "             for reason: ~w~n",
-                                            [Dir, M, I, Reason]),
+                                ?LOG(info, "An ~w handoff of partition ~w ~w was terminated "
+                                     "for reason: ~w",
+                                     [Dir, M, I, Reason]),
                                 true;
                             _ ->
-                                logger:error("An ~w handoff of partition ~w ~w was "
-                                             "terminated\n                        "
-                                             "             for reason: ~w~n",
-                                             [Dir, M, I, Reason]),
+                                ?LOG(error, "An ~w handoff of partition ~w ~w was terminated "
+                                     "for reason: ~w", [Dir, M, I, Reason]),
                                 true
                         end,
             %% if we have the vnode process pid, tell the vnode why the
@@ -579,9 +577,9 @@ handle_info({'DOWN', Ref, process, _Pid, Reason},
                  NewHS} ->
                     %% In this case the vnode died and the handoff
                     %% sender must be killed.
-                    logger:error("An ~w handoff of partition ~w ~w was "
-                                 "terminated because the vnode died",
-                                 [Dir, M, I]),
+                    ?LOG(error, "An ~w handoff of partition ~w ~w was "
+                         "terminated because the vnode died",
+                         [Dir, M, I]),
                     demonitor(TransM),
                     exit(Trans, vnode_died),
                     {noreply, State#state{handoffs = NewHS}};
@@ -1017,7 +1015,7 @@ kill_xfer_i(ModSrcTarget, Reason, HS) ->
             case Type of
                 undefined -> ok;
                 _ ->
-                    logger:info(Msg,
+                    ?LOG(info, Msg,
                                 [Type,
                                  Mod,
                                  SrcNode,

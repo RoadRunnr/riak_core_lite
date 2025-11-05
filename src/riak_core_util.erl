@@ -79,6 +79,7 @@
          get_index_n/1,
          posix_error/1]).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_vnode.hrl").
 
 -ifdef(TEST).
@@ -878,7 +879,7 @@ job_class_enabled(Class) ->
             % but since the value *can* be manipulated externally be more
             % accommodating. If someone mucks it up, nothing's going to be
             % allowed, but give them a chance to catch on instead of crashing.
-            _ = logger:error("riak_core.job_accept_class is not a "
+            _ = ?LOG(error, "riak_core.job_accept_class is not a "
                              "list: ~p",
                              [Other]),
             false
@@ -923,13 +924,13 @@ job_class_disabled_message(text, Class) ->
 %%
 report_job_request_disposition(true, Class, Mod, Func,
                                Line, Client) ->
-    logger:debug("Request '~p' accepted from ~p",
+    ?LOG(debug, "Request '~p' accepted from ~p",
                  [Class, Client],
                  #{pid => erlang:self(), module => Mod, function => Func,
                    line => Line});
 report_job_request_disposition(false, Class, Mod, Func,
                                Line, Client) ->
-    logger:warning("Request '~p' disabled from ~p",
+    ?LOG(warning, "Request '~p' disabled from ~p",
                    [Class, Client],
                    #{pid => erlang:self(), module => Mod, function => Func,
                      line => Line}).

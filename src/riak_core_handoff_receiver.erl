@@ -22,6 +22,7 @@
 
 -module(riak_core_handoff_receiver).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_handoff.hrl").
 
 -behaviour(gen_server).
@@ -113,14 +114,14 @@ handle_call({set_socket, Socket0}, _From, State) ->
 handle_info({tcp_closed, _Socket},
             State = #state{partition = Partition, count = Count,
                            peer = Peer}) ->
-    logger:info("Handoff receiver for partition ~p exited "
+    ?LOG(info, "Handoff receiver for partition ~p exited "
                 "after processing ~p objects from ~p",
                 [Partition, Count, Peer]),
     {stop, normal, State};
 handle_info({tcp_error, _Socket, Reason},
             State = #state{partition = Partition, count = Count,
                            peer = Peer}) ->
-    logger:info("Handoff receiver for partition ~p exited "
+    ?LOG(info, "Handoff receiver for partition ~p exited "
                 "after processing ~p objects from ~p: "
                 "TCP error ~p",
                 [Partition, Count, Peer, Reason]),
@@ -129,7 +130,7 @@ handle_info({tcp, Socket, Data}, State) ->
     [MsgType | MsgData] = Data,
     case catch process_message(MsgType, MsgData, State) of
         {'EXIT', Reason} ->
-            logger:error("Handoff receiver for partition ~p exited "
+            ?LOG(error, "Handoff receiver for partition ~p exited "
                          "abnormally after processing ~p objects "
                          "from ~p: ~p",
                          [State#state.partition,
@@ -142,7 +143,7 @@ handle_info({tcp, Socket, Data}, State) ->
             {noreply, NewState, State#state.recv_timeout_len}
     end;
 handle_info(timeout, State) ->
-    logger:error("Handoff receiver for partition ~p timed "
+    ?LOG(error, "Handoff receiver for partition ~p timed "
                  "out after processing ~p objects from "
                  "~p.",
                  [State#state.partition,
@@ -163,7 +164,7 @@ handle_info(timeout, State) ->
 process_message(?PT_MSG_INIT, MsgData,
                 State = #state{vnode_mod = VNodeMod, peer = Peer}) ->
     <<Partition:160/integer>> = MsgData,
-    logger:info("Receiving handoff data for partition "
+    ?LOG(info, "Receiving handoff data for partition "
                 "~p:~p from ~p",
                 [VNodeMod, Partition, Peer]),
     {ok, VNode} =
@@ -213,7 +214,7 @@ process_message(?PT_MSG_VERIFY_NODE, ExpectedName,
             gen_tcp:send(Socket, <<(?PT_MSG_VERIFY_NODE):8>>),
             State;
         Node ->
-            logger:error("Handoff from ~p expects us to be ~s "
+            ?LOG(error, "Handoff from ~p expects us to be ~s "
                          "but we are ~s.",
                          [Peer, Node, node()]),
             exit({error, {wrong_node, Node}})

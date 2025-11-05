@@ -52,6 +52,8 @@
          random_recursive_gossip/1,
          rejoin/2]).
 
+-include_lib("kernel/include/logger.hrl").
+
 %% Default gossip rate: allow at most 45 gossip messages every 10 seconds
 -define(DEFAULT_LIMIT, {45, 10000}).
 
@@ -189,7 +191,7 @@ handle_cast({rejoin, OtherRing}, State) ->
             case riak_core:join(node(), OtherNode, true, true) of
                 ok -> ok;
                 {error, Reason} ->
-                    logger:error("Could not rejoin cluster: ~p", [Reason]),
+                    ?LOG(error, "Could not rejoin cluster: ~p", [Reason]),
                     ok
             end,
             {noreply, State};
@@ -312,17 +314,17 @@ do_log_membership_changes([],
     do_log_membership_changes([], New).
 
 log_node_changed(Node, Old, New) ->
-    logger:info("'~s' changed from '~s' to '~s'~n",
-                [Node, Old, New]).
+    ?LOG(info, "'~s' changed from '~s' to '~s'",
+         [Node, Old, New]).
 
 log_node_added(Node, New) ->
-    logger:info("'~s' joined cluster with status '~s'~n",
+    ?LOG(info, "'~s' joined cluster with status '~s'",
                 [Node, New]).
 
 log_node_removed(Node, Old) ->
-    logger:info("'~s' removed from cluster (previously: "
-                "'~s')~n",
-                [Node, Old]).
+    ?LOG(info, "'~s' removed from cluster (previously: "
+         "'~s')",
+         [Node, Old]).
 
 remove_from_cluster(Ring, ExitingNode) ->
     remove_from_cluster(Ring,

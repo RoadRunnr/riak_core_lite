@@ -47,6 +47,8 @@
          terminate/2,
          code_change/3]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -type action() :: leave |
                   remove |
                   {replace, node()} |
@@ -907,7 +909,7 @@ tick(PreFetchRing, RingID,
                    end,
             case riak_core_ring:check_lastgasp(Ring) of
                 true ->
-                    logger:info("Ingoring fresh ring as shutting down"),
+                    ?LOG(info, "Ingoring fresh ring as shutting down"),
                     ok;
                 false ->
                     maybe_force_ring_update(Ring),
@@ -938,7 +940,7 @@ do_maybe_force_ring_update(Ring) ->
         {ok, NextRing} ->
             case same_plan(Ring, NextRing) of
                 false ->
-                    logger:warning("Forcing update of stalled ring"),
+                    ?LOG(warning, "Forcing update of stalled ring"),
                     riak_core_ring_manager:force_update();
                 true -> ok
             end;
@@ -1496,14 +1498,14 @@ maybe_handle_joining(Node, Joining, CState) ->
 update_ring(CNode, CState, Replacing, Seed, Log,
             false) ->
     Next0 = riak_core_ring:pending_changes(CState),
-    logger:debug("Members: ~p~n",
-                 [riak_core_ring:members(CState,
-                                         [joining,
-                                          valid,
-                                          leaving,
-                                          exiting,
-                                          invalid])]),
-    logger:debug("Updating ring :: next0 : ~p~n", [Next0]),
+    ?LOG(debug, "Members: ~p",
+         [riak_core_ring:members(CState,
+                                 [joining,
+                                  valid,
+                                  leaving,
+                                  exiting,
+                                  invalid])]),
+    ?LOG(debug, "Updating ring :: next0 : ~p", [Next0]),
     %% Remove tuples from next for removed nodes
     InvalidMembers = riak_core_ring:members(CState,
                                             [invalid]),
@@ -1519,15 +1521,15 @@ update_ring(CNode, CState, Replacing, Seed, Log,
     %% Transfer ownership after completed handoff
     {RingChanged1, CState3} = transfer_ownership(CState2,
                                                  Log),
-    logger:debug("Updating ring :: next1 : ~p~n",
-                 [riak_core_ring:pending_changes(CState3)]),
+    ?LOG(debug, "Updating ring :: next1 : ~p",
+         [riak_core_ring:pending_changes(CState3)]),
     %% Ressign leaving/inactive indices
     {RingChanged2, CState4} = reassign_indices(CState3,
                                                Replacing,
                                                Seed,
                                                Log),
-    logger:debug("Updating ring :: next2 : ~p~n",
-                 [riak_core_ring:pending_changes(CState4)]),
+    ?LOG(debug, "Updating ring :: next2 : ~p",
+         [riak_core_ring:pending_changes(CState4)]),
     %% Rebalance the ring as necessary. If pending changes exist ring
     %% is not rebalanced
     Next3 = rebalance_ring(CNode, CState4),
@@ -1546,7 +1548,7 @@ update_ring(CNode, CState, Replacing, Seed, Log,
                                       || {Idx, O, NO, _, _} <- Next4]),
             Diff = ordsets:subtract(NewS, OldS),
             _ = [Log(next, NChange) || NChange <- Diff],
-            logger:debug("Updating ring :: next3 : ~p~n", [Next4]),
+            ?LOG(debug, "Updating ring :: next3 : ~p", [Next4]),
             CState5 = riak_core_ring:set_pending_changes(CState4,
                                                          Next4),
             CState6 = riak_core_ring:increment_ring_version(CNode,
@@ -1861,16 +1863,16 @@ no_log(_, _) -> ok.
           {Idx :: integer(), NewOwner :: node(),
            CState :: riak_core_ring()}) -> ok.
 
-log(debug, {Msg, Args}) -> logger:debug(Msg, Args);
+log(debug, {Msg, Args}) -> ?LOG(debug, Msg, Args);
 log(ownership, {Idx, NewOwner, CState}) ->
     Owner = riak_core_ring:index_owner(CState, Idx),
-    logger:debug("(new-owner) ~b :: ~p -> ~p~n",
-                 [Idx, Owner, NewOwner]);
+    ?LOG(debug, "(new-owner) ~b :: ~p -> ~p",
+         [Idx, Owner, NewOwner]);
 log(reassign, {Idx, NewOwner, CState}) ->
     Owner = riak_core_ring:index_owner(CState, Idx),
-    logger:debug("(reassign) ~b :: ~p -> ~p~n",
-                 [Idx, Owner, NewOwner]);
+    ?LOG(debug, "(reassign) ~b :: ~p -> ~p",
+         [Idx, Owner, NewOwner]);
 log(next, {Idx, Owner, NewOwner}) ->
-    logger:debug("(pending) ~b :: ~p -> ~p~n",
-                 [Idx, Owner, NewOwner]);
+    ?LOG(debug, "(pending) ~b :: ~p -> ~p",
+         [Idx, Owner, NewOwner]);
 log(_, _) -> ok.

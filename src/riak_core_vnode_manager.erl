@@ -53,6 +53,8 @@
 %% Field debugging
 -export([get_tab/0]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -record(idxrec, {key, idx, mod, pid, monref}).
 
 -record(monrec, {monref, key}).
@@ -372,7 +374,7 @@ handle_call({xfer_complete, ModSrcTgt}, _From, State) ->
     ModPartition = {Mod, Partition},
     case get_repair(ModPartition, Repairs) of
         none ->
-            logger:error("Received xfer_complete for non-existing "
+            ?LOG(error, "Received xfer_complete for non-existing "
                          "repair: ~p",
                          [ModPartition]),
             {reply, ok, State};
@@ -385,7 +387,7 @@ handle_call({xfer_complete, ModSrcTgt}, _From, State) ->
                         POX2 = POX#xfer_status{status = complete},
                         R#repair{plus_one_xfer = POX2};
                     true ->
-                        logger:error("Received xfer_complete for non-existing "
+                        ?LOG(error, "Received xfer_complete for non-existing "
                                      "xfer: ~p",
                                      [ModSrcTgt])
                  end,
@@ -469,7 +471,7 @@ create_repair(Pairs, ModPartition, FilterModFun, Mod,
                      minus_one_xfer = MOXStatus, plus_one_xfer = POXStatus},
     Repairs2 = Repairs ++ [Repair],
     State2 = State#state{repairs = Repairs2},
-    logger:debug("add repair ~p", [ModPartition]),
+    ?LOG(debug, "add repair ~p", [ModPartition]),
     {reply, {ok, Pairs}, State2}.
 
 %% @private
@@ -504,7 +506,7 @@ handle_cast(maybe_start_vnodes, State) ->
     State2 = maybe_start_vnodes(Ring, State),
     {noreply, State2};
 handle_cast({kill_repairs, Reason}, State) ->
-    logger:warning("Killing all repairs: ~p", [Reason]),
+    ?LOG(warning, "Killing all repairs: ~p", [Reason]),
     kill_repairs(State#state.repairs, Reason),
     {noreply, State#state{repairs = []}};
 handle_cast(_, State) -> {noreply, State}.
@@ -608,13 +610,13 @@ maybe_ensure_vnodes_started(Ring) ->
 ensure_vnodes_started(Ring) ->
     case riak_core_ring:check_lastgasp(Ring) of
         true ->
-            logger:info("Don't start vnodes - last gasp ring");
+            ?LOG(info, "Don't start vnodes - last gasp ring");
         false ->
             spawn(fun () ->
                           try riak_core_ring_handler:ensure_vnodes_started(Ring)
                           catch
                               Type:Reason:Stacktrace ->
-                                  logger:error("~p",
+                                  ?LOG(error, "~p",
                                                [{Type, Reason, Stacktrace}])
                           end
                   end)
@@ -696,18 +698,18 @@ get_vnode(IdxList, Module, State) ->
         lists:partition(fun erlang:is_integer/1, Initial),
     StartFun = fun (Idx) ->
                        ForwardTo = get_forward(Module, Idx, State),
-                       logger:debug("Will start VNode for partition ~p",
+                       ?LOG(debug, "Will start VNode for partition ~p",
                                     [Idx]),
                        {ok, Pid} = riak_core_vnode_sup:start_vnode(Module,
                                                                    Idx,
                                                                    ForwardTo),
                        register_vnode_stats(Module, Idx, Pid),
-                       logger:debug("Started VNode, waiting for initialization "
+                       ?LOG(debug, "Started VNode, waiting for initialization "
                                     "to\n                              complete "
                                     "~p, ~p ",
                                     [Pid, Idx]),
                        ok = riak_core_vnode:wait_for_init(Pid),
-                       logger:debug("VNode initialization ready ~p, ~p",
+                       ?LOG(debug, "VNode initialization ready ~p, ~p",
                                     [Pid, Idx]),
                        {Idx, Pid}
                end,

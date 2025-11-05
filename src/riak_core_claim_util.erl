@@ -56,6 +56,8 @@
          rotations/1,
          substitutions/2]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -record(load,
         {node,    % Node name
          num_pri, % Number of primaries
@@ -477,7 +479,7 @@ construct(Complete, M, Owners, DAM, NVal) ->
             case Eligible of
                 [] ->
                     %% No eligible nodes - not enough to meet NVal, use any node
-                    logger:debug("construct -- unable to construct without "
+                    ?LOG(debug, "construct -- unable to construct without "
                                  "violating NVal"),
                     {Owners1, DAM1} = prepend_next_owner(M,
                                                          M,

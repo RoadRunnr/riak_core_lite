@@ -141,6 +141,8 @@
               ring_size/0,
               partition_id/0]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
@@ -219,7 +221,7 @@ check_tainted(Ring = #chstate{}, Msg) ->
             riak_core:stop(Msg),
             ok;
         {{ok, true}, false} ->
-            logger:error(Msg),
+            ?LOG(error, Msg),
             ok;
         _ -> ok
     end.
@@ -1699,9 +1701,9 @@ pick_val({N1, M1}, {N2, M2}) ->
 %% @private
 %% Log ring metadata input and result for debug purposes
 log_meta_merge(M1, M2, Meta) ->
-    logger:debug("Meta A: ~p", [M1]),
-    logger:debug("Meta B: ~p", [M2]),
-    logger:debug("Meta result: ~p", [Meta]).
+    ?LOG(debug, "Meta A: ~p", [M1]),
+    ?LOG(debug, "Meta B: ~p", [M2]),
+    ?LOG(debug, "Meta result: ~p", [Meta]).
 
 %% @private
 %% Log result of a ring reconcile. In the case of ring churn,
@@ -1709,7 +1711,7 @@ log_meta_merge(M1, M2, Meta) ->
 %% Handle legacy rings as well.
 log_ring_result(#chstate{vclock = V, members = Members,
                          next = Next}) ->
-    logger:debug("Updated ring vclock: ~p, Members: ~p, "
+    ?LOG(debug, "Updated ring vclock: ~p, Members: ~p, "
                  "Next: ~p",
                  [V, Members, Next]).
 

@@ -44,6 +44,8 @@
 
 -export([wait_for_application/1, wait_for_service/1]).
 
+-include_lib("kernel/include/logger.hrl").
+
 -compile({no_auto_import, [{register, 2}]}).
 
 -define(WAIT_PRINT_INTERVAL, 60 * 1000).
@@ -64,7 +66,7 @@ stop() -> stop("riak stop requested").
 -spec stop(Reason :: term()) -> ok.
 
 stop(Reason) ->
-    logger:notice("~p", [Reason]),
+    ?LOG(notice, "~p", [Reason]),
     % if we're in test mode, we don't want to halt the node, so instead
     % we just stop the application.
     application:stop(riak_core).
@@ -80,7 +82,7 @@ stop(Reason) ->
 stop(Reason) ->
     % we never do an application:stop because that makes it very hard
     %  to really halt the runtime, which is what we need here.
-    logger:notice("~p", [Reason]),
+    ?LOG(notice, "~p", [Reason]),
     init:stop().
 
 -endif.
@@ -634,19 +636,19 @@ wait_for_application(App, Elapsed) ->
         of
         true when Elapsed == 0 -> ok;
         true when Elapsed > 0 ->
-            logger:info("Wait complete for application ~p (~p "
-                        "seconds)",
-                        [App, Elapsed div 1000]),
+            ?LOG(info, "Wait complete for application ~p (~p "
+                 "seconds)",
+                 [App, Elapsed div 1000]),
             ok;
         false ->
             %% Possibly print a notice.
             ShouldPrint = Elapsed rem (?WAIT_PRINT_INTERVAL) == 0,
             case ShouldPrint of
                 true ->
-                    logger:info("Waiting for application ~p to start\n "
-                                "                                    "
-                                "(~p seconds).",
-                                [App, Elapsed div 1000]);
+                    ?LOG(info, "Waiting for application ~p to start\n "
+                         "                                    "
+                         "(~p seconds).",
+                         [App, Elapsed div 1000]);
                 false -> skip
             end,
             timer:sleep(?WAIT_POLL_INTERVAL),
@@ -674,18 +676,18 @@ wait_for_service(Service, Elapsed) ->
         of
         true when Elapsed == 0 -> ok;
         true when Elapsed > 0 ->
-            logger:info("Wait complete for service ~p (~p seconds)",
-                        [Service, Elapsed div 1000]),
+            ?LOG(info, "Wait complete for service ~p (~p seconds)",
+                 [Service, Elapsed div 1000]),
             ok;
         false ->
             %% Possibly print a notice.
             ShouldPrint = Elapsed rem (?WAIT_PRINT_INTERVAL) == 0,
             case ShouldPrint of
                 true ->
-                    logger:info("Waiting for service ~p to start\n   "
-                                "                                  (~p "
-                                "seconds)",
-                                [Service, Elapsed div 1000]);
+                    ?LOG(info, "Waiting for service ~p to start\n   "
+                         "                                  (~p "
+                         "seconds)",
+                         [Service, Elapsed div 1000]);
                 false -> skip
             end,
             timer:sleep(?WAIT_POLL_INTERVAL),

@@ -24,6 +24,8 @@
 
 -export([start_proxy/2, stop_proxy/2, start_proxies/1]).
 
+-include_lib("kernel/include/logger.hrl").
+
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -50,7 +52,7 @@ stop_proxy(Mod, Index) ->
     ok.
 
 start_proxies(Mod) ->
-    logger:debug("Starting vnode proxies for: ~p", [Mod]),
+    ?LOG(debug, "Starting vnode proxies for: ~p", [Mod]),
     Indices = get_indices(),
     _ = [start_proxy(Mod, Index) || Index <- Indices],
     ok.

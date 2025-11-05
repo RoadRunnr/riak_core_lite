@@ -104,6 +104,8 @@
          set_ring_global/1,
          promote_ring/0]).
 
+-include_lib("kernel/include/logger.hrl").
+
                            %% For EUnit testing
 
 -ifdef(TEST).
@@ -250,7 +252,7 @@ do_write_ringfile(Ring, FN) ->
                                          term_to_binary(Ring))
     catch
         _:Err ->
-            logger:error("Unable to write ring to \"~s\" - ~p\n",
+            ?LOG(error, "Unable to write ring to \"~s\" - ~p\n",
                          [FN, Err]),
             {error, Err}
     end.
@@ -365,16 +367,16 @@ reload_ring(live) ->
         {ok, RingFile} ->
             case riak_core_ring_manager:read_ringfile(RingFile) of
                 {error, Reason} ->
-                    logger:critical("Failed to read ring file: ~p",
+                    ?LOG(critical, "Failed to read ring file: ~p",
                                     [riak_core_util:posix_error(Reason)]),
                     throw({error, Reason});
                 Ring -> Ring
             end;
         {error, not_found} ->
-            logger:warning("No ring file available."),
+            ?LOG(warning, "No ring file available."),
             riak_core_ring:fresh();
         {error, Reason} ->
-            logger:critical("Failed to load ring file: ~p",
+            ?LOG(critical, "Failed to load ring file: ~p",
                             [riak_core_util:posix_error(Reason)]),
             throw({error, Reason})
     end.
@@ -425,7 +427,7 @@ handle_call({ring_trans, Fun, Args}, _From,
         {ignore, Reason} ->
             {reply, {not_changed, Reason}, State};
         Other ->
-            logger:error("ring_trans: invalid return value: ~p",
+            ?LOG(error, "ring_trans: invalid return value: ~p",
                          [Other]),
             {reply, not_changed, State}
     end;
@@ -460,7 +462,7 @@ handle_cast(write_ringfile,
 handle_info(inactivity_timeout, State) ->
     case is_stable_ring(State) of
         {true, DeltaMS} ->
-            logger:debug("Promoting ring after ~p", [DeltaMS]),
+            ?LOG(debug, "Promoting ring after ~p", [DeltaMS]),
             promote_ring(),
             State2 = State#state{inactivity_timer = undefined},
             {noreply, State2};

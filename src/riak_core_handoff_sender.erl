@@ -24,6 +24,7 @@
 
 -export([start_link/4]).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_handoff.hrl").
 
 %% can be set with env riak_core, handoff_timeout
@@ -33,8 +34,8 @@
 %% note this is in seconds
 -define(STATUS_INTERVAL, 2).
 
--define(LOG_INFO(Str, Args),
-        logger:info("~p transfer of ~p from ~p ~p to ~p ~p "
+-define(RK_LOG_INFO(Str, Args),
+        ?LOG(info, "~p transfer of ~p from ~p ~p to ~p ~p "
                     "failed "
                         ++ Str,
                     [Type,
@@ -46,7 +47,7 @@
                         ++ Args)).
 
 -define(LOG_FAIL(Str, Args),
-        logger:error("~p transfer of ~p from ~p ~p to ~p ~p "
+        ?LOG(error, "~p transfer of ~p from ~p ~p to ~p ~p "
                      "failed "
                          ++ Str,
                      [Type,
@@ -163,7 +164,7 @@ start_fold_(TargetNode, Module, Type, Opts, ParentPid,
     case gen_tcp:recv(Socket, 0, RecvTimeout) of
         {ok, [?PT_MSG_VERIFY_NODE | _]} -> ok;
         {ok, [?PT_MSG_UNKNOWN | _]} ->
-            logger:warning("Could not verify identity of peer ~s.",
+            ?LOG(warning, "Could not verify identity of peer ~s.",
                            [TargetNode]),
             ok;
         {error, timeout} -> exit({shutdown, timeout});
@@ -196,7 +197,7 @@ start_fold_(TargetNode, Module, Type, Opts, ParentPid,
     end,
     RemoteSupportsBatching =
         remote_supports_batching(TargetNode),
-    logger:info("Starting ~p transfer of ~p from ~p ~p "
+    ?LOG(info, "Starting ~p transfer of ~p from ~p ~p "
                 "to ~p ~p",
                 [Type,
                  Module,
@@ -248,7 +249,7 @@ start_fold_(TargetNode, Module, Type, Opts, ParentPid,
     AccRecord = send_objects(AccRecord0#ho_acc.item_queue,
                              AccRecord0),
     if AccRecord == {error, vnode_shutdown} ->
-           ?LOG_INFO("because the local vnode was shutdown", []),
+           ?RK_LOG_INFO("because the local vnode was shutdown", []),
            throw({be_quiet,
                   error,
                   local_vnode_shutdown_requested});
@@ -268,19 +269,19 @@ start_fold_(TargetNode, Module, Type, Opts, ParentPid,
             %% so handoff_complete can only be sent once all of the data is
             %% written.  handle_handoff_data is a sync call, so once
             %% we receive the sync the remote side will be up to date.
-            logger:debug("~p ~p Sending final sync",
+            ?LOG(debug, "~p ~p Sending final sync",
                          [SrcPartition, Module]),
             ok = gen_tcp:send(Socket, <<(?PT_MSG_SYNC):8>>),
             case gen_tcp:recv(Socket, 0, RecvTimeout) of
                 {ok, [?PT_MSG_SYNC | <<"sync">>]} ->
-                    logger:debug("~p ~p Final sync received",
+                    ?LOG(debug, "~p ~p Final sync received",
                                  [SrcPartition, Module]);
                 {error, timeout} -> exit({shutdown, timeout})
             end,
             FoldTimeDiff = end_fold_time(StartFoldTime),
             ThroughputBytes = TotalBytes / FoldTimeDiff,
             ok =
-                logger:info("~p transfer of ~p from ~p ~p to ~p ~p "
+                ?LOG(info, "~p transfer of ~p from ~p ~p to ~p ~p "
                             "completed: sent ~p bytes in ~p of ~p "
                             "objects in ~p seconds (~p/second)",
                             [Type,
@@ -466,7 +467,7 @@ visit_item2(K, V, Acc) ->
             case Module:encode_handoff_item(K, V) of
                 corrupted ->
                     {Bucket, Key} = K,
-                    logger:warning("Unreadable object ~p/~p discarded",
+                    ?LOG(warning, "Unreadable object ~p/~p discarded",
                                    [Bucket, Key]),
                     Acc;
                 BinObj ->
@@ -776,12 +777,12 @@ remote_supports_batching(Node) ->
                         [])
         of
         true ->
-            logger:debug("remote node supports batching, enabling"),
+            ?LOG(debug, "remote node supports batching, enabling"),
             true;
         _ ->
             %% whatever the problem here, just revert to the old behavior
             %% which shouldn't matter too much for any single handoff
-            logger:debug("remote node doesn't support batching"),
+            ?LOG(debug, "remote node doesn't support batching"),
             false
     end.
 

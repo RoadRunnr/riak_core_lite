@@ -27,6 +27,8 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+-include_lib("kernel/include/logger.hrl").
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
@@ -50,7 +52,7 @@ start(_StartType, _StartArgs) ->
 -spec stop(State :: term()) -> ok.
 
 stop(_State) ->
-    logger:info("Stopped application riak_core", []),
+    ?LOG(info, "Stopped application riak_core", []),
     ok.
 
 %% @doc Start all application dependencies and try to read the ring directory.
@@ -67,10 +69,9 @@ validate_ring_state_directory_exists() ->
         of
         ok -> ok;
         {error, RingReason} ->
-            logger:critical("Ring state directory ~p does not exist, "
-                            "and could not be created: ~p",
-                            [RingStateDir,
-                             riak_core_util:posix_error(RingReason)]),
+            ?LOG(critical, "Ring state directory ~p does not exist, "
+                 "and could not be created: ~p",
+                 [RingStateDir, riak_core_util:posix_error(RingReason)]),
             throw({error, invalid_ring_state_dir})
     end.
 

@@ -33,6 +33,7 @@
          system_terminate/4,
          system_code_change/4]).
 
+-include_lib("kernel/include/logger.hrl").
 -include("riak_core_vnode.hrl").
 
 -ifdef(TEST).
@@ -90,7 +91,7 @@ init([Parent, RegName, Module, Index]) ->
                        of
                        true -> Interval;
                        false ->
-                           logger:warning("Setting riak_core/vnode_check_interval "
+                           ?LOG(warning, "Setting riak_core/vnode_check_interval "
                                           "to ~b",
                                           [Threshold div 2]),
                            Threshold div 2
@@ -100,7 +101,7 @@ init([Parent, RegName, Module, Index]) ->
                               of
                               true -> RequestInterval;
                               false ->
-                                  logger:warning("Setting riak_core/vnode_check_request_interva"
+                                  ?LOG(warning, "Setting riak_core/vnode_check_request_interva"
                                                  "l to ~b",
                                                  [SafeInterval div 2]),
                                   SafeInterval div 2
